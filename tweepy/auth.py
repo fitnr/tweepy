@@ -17,7 +17,7 @@ https://dev.twitter.com/discussions/21281"""
 
 class AuthHandler(object):
 
-    def apply_auth(self, url, method, headers, parameters):
+    def apply_auth(self):
         """Apply authentication headers to request"""
         raise NotImplementedError
 

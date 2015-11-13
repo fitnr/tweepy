@@ -297,7 +297,7 @@ class List(Model):
         return lst
 
     @classmethod
-    def parse_list(cls, api, json_list, result_set=None):
+    def parse_list(cls, api, json_list):
         results = ResultSet()
         if isinstance(json_list, dict):
             json_list = json_list['lists']
