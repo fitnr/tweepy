@@ -4,12 +4,12 @@
 
 from __future__ import print_function
 
+
+import os
 from datetime import datetime
-
-import six
-from six.moves.urllib.parse import quote
-
 from email.utils import parsedate
+import six
+from .error import TweepError
 
 
 def parse_datetime(string):
@@ -56,3 +56,17 @@ def import_simplejson():
 def list_to_csv(item_list):
     if item_list:
         return ','.join([str(i) for i in item_list])
+
+def getfilesize(filename, f=None):
+    if f is None:
+        try:
+            size = os.path.getsize(filename)
+        except os.error as e:
+            raise TweepError('Unable to access file: %s' % e.strerror)
+
+    else:
+        f.seek(0, 2)  # Seek to end of file
+        size = f.tell()
+        f.seek(0)  # Reset to beginning of file
+
+    return size

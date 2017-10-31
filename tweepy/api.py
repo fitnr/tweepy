@@ -17,7 +17,7 @@ elif six.PY3:
 from tweepy.binder import bind_api
 from tweepy.error import TweepError
 from tweepy.parsers import ModelParser, Parser, RawParser
-from tweepy.utils import list_to_csv
+from tweepy.utils import list_to_csv, getfilesize
 
 IMAGE_MIMETYPES = ('image/gif', 'image/jpeg', 'image/png', 'image/webp')
 CHUNKED_MIMETYPES = ('image/gif', 'image/jpeg', 'image/png', 'image/webp', 'video/mp4')
@@ -211,18 +211,13 @@ class API(object):
         f = kwargs.pop('file', None)
 
         mime, _ = mimetypes.guess_type(filename)
-        try:
-            size = os.path.getsize(filename)
-        except OSError:
-            f.seek(0, 2)
-            size = f.tell()
-            f.seek(0)
+        size = getfilesize(filename, f)
 
         if mime in IMAGE_MIMETYPES and size < self.max_size_standard:
-            return self.image_upload(filename, f=f, *args, **kwargs)
+            return self.image_upload(filename, file=f, *args, **kwargs)
 
         elif mime in CHUNKED_MIMETYPES:
-            return self.upload_chunked(filename, f=f, *args, **kwargs)
+            return self.upload_chunked(filename, file=f, *args, **kwargs)
 
         else:
             raise TweepError("Can't upload media with mime type %s" % mime)
@@ -257,7 +252,7 @@ class API(object):
 
         # Initialize upload (Twitter cannot handle videos > 15 MB)
         headers, post_data, fp = API._chunk_media('init', filename, self.max_size_chunked, form_field='media', f=f, is_direct_message=is_direct_message)
-        kwargs.update({ 'headers': headers, 'post_data': post_data })
+        kwargs.update({'headers': headers, 'post_data': post_data})
 
         # Send the INIT request
         media_info = bind_api(
@@ -277,7 +272,7 @@ class API(object):
             chunk_size = kwargs.pop('chunk_size', 1024 * 1024)
             chunk_size = max(chunk_size, 16 * 2014)
 
-            fsize = os.path.getsize(filename)
+            fsize = getfilesize(filename, f)
             nloops = int(fsize / chunk_size) + (1 if fsize % chunk_size > 0 else 0)
             for i in range(nloops):
                 headers, post_data, fp = API._chunk_media('append', filename, self.max_size_chunked, chunk_size=chunk_size, f=fp, media_id=media_info.media_id, segment_index=i, is_direct_message=is_direct_message)
@@ -1379,20 +1374,15 @@ class API(object):
     def _pack_image(filename, max_size, form_field="image", f=None):
         """Pack image from file into multipart-formdata post body"""
         # image must be less than 5MB in size
-        if f is None:
-            try:
-                if os.path.getsize(filename) > (max_size * 1024):
-                    raise TweepError('File is too big, must be less than %skb.' % max_size)
-            except os.error as e:
-                raise TweepError('Unable to access file: %s' % e.strerror)
+        filesize = getfilesize(filename, f)
 
+        if filesize > (max_size * 1024):
+            raise TweepError('File is too big, must be less than %skb.' % max_size)
+
+        if f is None:
             # build the mulitpart-formdata body
             fp = open(filename, 'rb')
         else:
-            f.seek(0, 2)  # Seek to end of file
-            if f.tell() > (max_size * 1024):
-                raise TweepError('File is too big, must be less than %skb.' % max_size)
-            f.seek(0)  # Reset to beginning of file
             fp = f
 
         # image must be gif, jpeg, or png
@@ -1433,22 +1423,14 @@ class API(object):
     def _chunk_media(command, filename, max_size, form_field="media", chunk_size=4096, f=None, media_id=None, segment_index=0, is_direct_message=False):
         fp = None
         if command == 'init':
-            if f is None:
-                file_size = os.path.getsize(filename)
-                try:
-                    if file_size > (max_size * 1024):
-                        raise TweepError('File is too big, must be less than %skb.' % max_size)
-                except os.error as e:
-                    raise TweepError('Unable to access file: %s' % e.strerror)
+            file_size = getfilesize(filename, f)
+            if file_size > (max_size * 1024):
+                raise TweepError('File is too big, must be less than %skb.' % max_size)
 
-                # build the mulitpart-formdata body
+            if f is None:
+                # build the multipart-formdata body
                 fp = open(filename, 'rb')
             else:
-                f.seek(0, 2)  # Seek to end of file
-                file_size = f.tell()
-                if file_size > (max_size * 1024):
-                    raise TweepError('File is too big, must be less than %skb.' % max_size)
-                f.seek(0)  # Reset to beginning of file
                 fp = f
         elif command != 'finalize':
             if f is not None:
