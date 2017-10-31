@@ -14,10 +14,10 @@ if six.PY2:
 elif six.PY3:
     from urllib.parse import urlencode
 
-from tweepy.binder import bind_api
-from tweepy.error import TweepError
-from tweepy.parsers import ModelParser, Parser, RawParser
-from tweepy.utils import list_to_csv, getfilesize
+from .binder import bind_api
+from .error import TweepError
+from .parsers import ModelParser, Parser, RawParser
+from .utils import list_to_csv, getfilesize
 
 IMAGE_MIMETYPES = ('image/gif', 'image/jpeg', 'image/png', 'image/webp')
 CHUNKED_MIMETYPES = ('image/gif', 'image/jpeg', 'image/png', 'image/webp', 'video/mp4')
@@ -1520,4 +1520,4 @@ class API(object):
             else:
                 return prefix + '_image'
         elif file_type == 'video/mp4':
-                    return prefix + '_video'
+            return prefix + '_video'
