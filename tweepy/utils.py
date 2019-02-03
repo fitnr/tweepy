@@ -7,8 +7,8 @@ from __future__ import print_function
 
 import os
 from datetime import datetime
-from email.utils import parsedate
 import six
+from email.utils import parsedate
 from .error import TweepError
 
 
@@ -41,14 +41,7 @@ def import_simplejson():
     try:
         import simplejson as json
     except ImportError:
-        try:
-            import json  # Python 2.6+
-        except ImportError:
-            try:
-                # Google App Engine
-                from django.utils import simplejson as json
-            except ImportError:
-                raise ImportError("Can't load a json library")
+        import json
 
     return json
 
